@@ -1,4 +1,6 @@
 # This is a sample Python script.
+import math
+import re
 from sys import argv
 
 # Press ⌃R to execute it or replace it with your code.
@@ -33,13 +35,18 @@ with open(train) as file:
         if("<s>" in line):
             aFeatures = [0,0,0,0,0,0,0,0,0, key]
             for i in range(len(features)-1):
+                #splitting the sentence, to get the count of features
                 if(features[i] in line):
-                    aFeatures[i] = aFeatures[i]+1
+                    #NOTE: I used the word with no bounds as my regex,
+                    #My reasoning was that prevented me from having to make special cases
+                    #for words like call to also get calls
+                    aFeatures[i] = len(re.findall(features[i],line))
                     continue
 
             aFeaturesTuple = tuple(aFeatures)
             Sense.append(aFeatures)
 
+#These are my tests. The end of the vector list is what contains the rule guess
 for vector in Sense:
     if(vector[0] > 0):
         #Now the last index of Sense will have the sense determined by my test
@@ -79,6 +86,42 @@ for vector in Sense:
                                     else:
                                         vector.append("product")
 
+countSense = {}
+
+
+#going in and counting all of the features
+for i in range(len(features)):
+    featCount = 0
+    for vector in Sense:
+        if vector[i] > 0:
+            featCount += vector[i]
+
+    featAndCountTuple = (features[i], featCount)
+    #getting the count of features
+    countSense[features[i]] = featCount
+
+testRankings = {}
+for i in range(len(features)):
+    totalFeatures = countSense[features[i]]
+    totalProdGivenFeature = 0
+    totalPhoneGivenFeature = 0
+    for vector in Sense:
+        if vector [i] > 0 and vector[len(vector)-2] == 'product':
+            totalProdGivenFeature += vector[i]
+        else:
+            if vector [i] > 0 and vector[len(vector)-2] == 'phone':
+                totalPhoneGivenFeature += vector[i]
+
+    if totalFeatures == 0:
+        totalFeatures = 1
+    ProdGivenFeature = totalProdGivenFeature / totalFeatures
+    PhoneGivenFeature = totalPhoneGivenFeature / totalFeatures
+    if PhoneGivenFeature == 0:
+        PhoneGivenFeature = 1
+    if ProdGivenFeature == 0:
+        ProdGivenFeature = 1
+    testRank = abs(math.log(ProdGivenFeature/PhoneGivenFeature))
+    testRankings[features[i]] = testRank
 
 
 
